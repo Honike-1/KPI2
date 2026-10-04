@@ -6,7 +6,7 @@ erDiagram
         string trainer_id
         string trainer_name
         string verification_status
-        integer reports_count
+        int reports_count
     }
     Umamusume {
         uuid id PK
@@ -31,11 +31,11 @@ erDiagram
         uuid player_id FK
         uuid umamusume_id FK
         string rank
-        integer speed_stat
-        integer stamina_stat
-        integer power_stat
-        integer guts_stat
-        integer wit_stat
+        int speed_stat
+        int stamina_stat
+        int power_stat
+        int guts_stat
+        int wit_stat
         datetime created_at
         datetime updated_at
     }
@@ -43,8 +43,8 @@ erDiagram
         uuid id PK
         uuid player_id FK
         uuid support_card_id FK
-        integer level
-        integer limit_break
+        int level
+        int limit_break
         datetime created_at
         datetime updated_at
     }
