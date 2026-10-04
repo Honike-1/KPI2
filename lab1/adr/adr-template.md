@@ -3,8 +3,6 @@
 **Status**: Proposed | Accepted | Rejected | Deprecated | Superseded by ADR-NNNN
 
 **Date**: YYYY-MM-DD
-**Authors / decision makers**: Name, Name
-**Related documents**: ADR-NNNN, `spec.md`, link to the issue
 
 ---
 
