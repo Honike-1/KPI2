@@ -1,4 +1,4 @@
-# Промпт №1: генерація ER-моделі Mermaid на основі `spec.md`
+# Промпт №2: генерація ER-моделі Mermaid на основі `spec.md`
 
 **Модель:** Claude Sonnet 5.5 (Anthropic)
 
