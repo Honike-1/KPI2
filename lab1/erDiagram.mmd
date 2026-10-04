@@ -1,12 +1,13 @@
 erDiagram
     Player {
         uuid id PK
-        string email
+        string email UK
         string password
-        string trainer_id
+        string trainer_id UK
         string trainer_name
         string verification_status
         int reports_count
+        string role
     }
     Umamusume {
         uuid id PK
@@ -52,10 +53,16 @@ erDiagram
         uuid shared_uma_id PK, FK
         uuid factor_id PK, FK
     }
+    Report {
+        uuid reporter_id FK
+        uuid reported_id FK
+    }
 
-    Player ||--o{ SharedUma : "has"
-    Player ||--o{ SharedCard : "has"
-    Umamusume ||--o{ SharedUma : "is used in"
-    SupportCard ||--o{ SharedCard : "is used in"
+    Player ||..o{ SharedUma : "has"
+    Player ||..o{ SharedCard : "has"
+    Umamusume ||..o{ SharedUma : "is used in"
+    SupportCard ||..o{ SharedCard : "is used in"
     SharedUma ||--o{ shared_uma_factors : "has"
     Factor ||--o{ shared_uma_factors : "has"
+    Player ||..o{ Report : "reports"
+    Player ||..o{ Report : "is reported in"
