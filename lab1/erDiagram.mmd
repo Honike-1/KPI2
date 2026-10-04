@@ -23,15 +23,19 @@ erDiagram
     }
     Factor {
         uuid id PK
-        string name
+        string name UK
         int star_rate
         string category
     }
+    Rank {
+        uuid id PK
+        string code UK
+    }
     SharedUma {
         uuid id PK
-        uuid player_id FK
+        uuid player_id FK, UK
         uuid umamusume_id FK
-        string rank
+        uuid rank_id FK
         int speed_stat
         int stamina_stat
         int power_stat
@@ -42,27 +46,18 @@ erDiagram
     }
     SharedCard {
         uuid id PK
-        uuid player_id FK
+        uuid player_id FK, UK
         uuid support_card_id FK
         int level
         int limit_break
         datetime created_at
         datetime updated_at
     }
-    shared_uma_factors {
-        uuid shared_uma_id PK, FK
-        uuid factor_id PK, FK
-    }
-    Report {
-        uuid reporter_id FK
-        uuid reported_id FK
-    }
 
-    Player ||..o{ SharedUma : "has"
-    Player ||..o{ SharedCard : "has"
-    Umamusume ||..o{ SharedUma : "is used in"
-    SupportCard ||..o{ SharedCard : "is used in"
-    SharedUma ||--o{ shared_uma_factors : "has"
-    Factor ||--o{ shared_uma_factors : "has"
-    Player ||..o{ Report : "reports"
-    Player ||..o{ Report : "is reported in"
+    Player ||..o| SharedUma : "має"
+    Player ||..o| SharedCard : "має"
+    Umamusume ||..o{ SharedUma : "використовується в"
+    SupportCard ||..o{ SharedCard : "використовується в"
+    Rank ||..o{ SharedUma : "визначає ранг"
+    SharedUma }o--o{ Factor : "має"
+    Player }o--o{ Player : "скаржиться на"
