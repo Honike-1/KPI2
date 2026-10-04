@@ -1,0 +1,63 @@
+```mermaid
+erDiagram
+    Player {
+        uuid id PK
+        string email
+        string password
+        string trainer_id
+        string trainer_name
+        string verification_status
+        integer reports_count
+    }
+    Umamusume {
+        uuid id PK
+        string name
+        string icon
+    }
+    SupportCard {
+        uuid id PK
+        string name
+        string icon
+        string card_type
+        string rarity
+    }
+    Factor {
+        uuid id PK
+        string name
+        int star_rate
+        string category
+    }
+    SharedUma {
+        uuid id PK
+        uuid player_id FK
+        uuid umamusume_id FK
+        string rank
+        integer speed_stat
+        integer stamina_stat
+        integer power_stat
+        integer guts_stat
+        integer wit_stat
+        datetime created_at
+        datetime updated_at
+    }
+    SharedCard {
+        uuid id PK
+        uuid player_id FK
+        uuid support_card_id FK
+        integer level
+        integer limit_break
+        datetime created_at
+        datetime updated_at
+    }
+    shared_uma_factors {
+        uuid shared_uma_id PK, FK
+        uuid factor_id PK, FK
+    }
+
+    Player ||--o{ SharedUma : "has"
+    Player ||--o{ SharedCard : "has"
+    Umamusume ||--o{ SharedUma : "is used in"
+    SupportCard ||--o{ SharedCard : "is used in"
+    SharedUma ||--o{ shared_uma_factors : "has"
+    Factor ||--o{ shared_uma_factors : "has"
+```
