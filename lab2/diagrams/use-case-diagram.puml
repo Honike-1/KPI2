@@ -1,5 +1,5 @@
 @startuml
-title Umasearch: Use Case Diagram
+title Umasearch: Use Case Diagram (v2)
 left to right direction
 skinparam linetype polyline
 skinparam nodesep 25
@@ -14,6 +14,7 @@ skinparam usecase {
 actor "Guest" as Guest
 actor "Player" as Player
 actor "Admin" as Admin
+actor "Система" as Sys <<system>>
 
 rectangle "Umasearch" {
 
@@ -57,29 +58,24 @@ Player --> UC08
 Player --> UC09
 Player --> UC10
 
-UC02 <-- Admin
-UC11 <-- Admin
-UC12 <-- Admin
-UC13 <-- Admin
-UC14 <-- Admin
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
 
-' --- Узагальнення (UC-20 абстрактний) ---
+Sys --> UC17
+
+' --- Узагальнення ---
+Admin --|> Player
 UC03 --|> UC20
 UC04 --|> UC20
 
 ' --- include ---
-UC03 ..> UC05 : <<include>>
-UC04 ..> UC05 : <<include>>
+UC20 ..> UC05 : <<include>>
 
 UC06 ..> UC16 : <<include>>
 UC07 ..> UC16 : <<include>>
 UC08 ..> UC16 : <<include>>
-
-UC06 ..> UC02 : <<include>>
-UC07 ..> UC02 : <<include>>
-UC08 ..> UC02 : <<include>>
-UC09 ..> UC02 : <<include>>
-UC10 ..> UC02 : <<include>>
 
 UC11 ..> UC15 : <<include>>
 UC12 ..> UC15 : <<include>>
@@ -87,8 +83,21 @@ UC13 ..> UC15 : <<include>>
 UC14 ..> UC15 : <<include>>
 
 ' --- extend ---
-UC18 ..> UC05 : <<extend>>\n[видача порожня]
+UC18 ..> UC05 : <<extend>>\n[збігів 0]
 UC19 ..> UC05 : <<extend>>\n[користувач авторизований]
 UC17 ..> UC10 : <<extend>>\n[reports_count ≥ 5]
+
+note right of UC17
+  Одна операція з UC-10 (REP-03):
+  скарга, лічильник і flagged
+  зберігаються разом.
+end note
+
+note bottom of UC02
+  Вхід — передумова UC-06…UC-14,
+  а не include (ADR-0009).
+  Admin = Player з role = admin;
+  успадкування UC Player — ✱ (ADR-0007).
+end note
 
 @enduml
