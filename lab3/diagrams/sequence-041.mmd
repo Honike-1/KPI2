@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor A as Player A<br/>(скаржник)
+    participant RS as ReportService
+    participant REL as Player–Player<br/>«скаржиться на»
+    participant PB as Player B<br/>(відповідач)
+
+    Note over A,PB: SC-041 · REP-01 · UC-10<br/>Дано: B.reports_count = 2<br/>Коли одна зі складових операції не вдається
+    A->>+RS: submitReport(reportedPlayerId = B)
+    RS->>RS: isSelfReport(A, B) = false
+    RS->>+REL: existsPair(A, B)
+    REL-->>-RS: false
+    alt A ≠ B і пари A — B немає (REP-02 не порушено)
+        rect rgba(120, 160, 255, 0.15)
+            Note over RS,PB: Одна неподільна операція (REP-01)
+            RS->>RS: beginTransaction()
+            alt збереження пари не вдалося
+                RS->>+REL: savePair(A, B)
+                REL--xRS: збій збереження пари
+                deactivate REL
+                RS->>RS: rollback()
+                Note over REL,PB: пару A — B не збережено<br/>B.reports_count = 2 без змін
+            else пару збережено, збільшення лічильника не вдалося
+                RS->>+REL: savePair(A, B)
+                REL-->>-RS: ok
+                RS->>+PB: incrementReportsCount(B)
+                PB--xRS: збій збільшення reports_count
+                deactivate PB
+                RS->>RS: rollback()
+                Note over REL,PB: збережену пару скасовано<br/>B.reports_count = 2 без змін
+            end
+        end
+        RS-->>A: reportFailed (жодна зі змін не застосована)
+    else A = B або пара A — B уже є
+        RS-->>A: reportRejected (SC-042, SC-043)
+    end
+    deactivate RS

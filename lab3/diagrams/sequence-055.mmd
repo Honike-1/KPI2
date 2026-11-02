@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor C as Player C<br/>(скаржник)
+    participant RS as ReportService
+    participant REL as Player–Player<br/>«скаржиться на»
+    participant PP as Player P<br/>(відповідач)
+
+    Note over C,PP: SC-055 · ADM-04, REP-03 · UC-10, UC-14<br/>Дано (результат UC-14): Admin повернув P зі flagged у unverified<br/>P.reports_count = 5 не скинуто (ADR-0008), C ще не скаржився на P
+    C->>+RS: submitReport(reportedPlayerId = P)
+    RS->>RS: isSelfReport(C, P) = false
+    RS->>+REL: existsPair(C, P)
+    REL-->>-RS: false
+    alt C ≠ P і пари C — P немає (REP-02 не порушено)
+        rect rgba(120, 160, 255, 0.15)
+            Note over RS,PP: Одна операція зі збереженням скарги (REP-03)
+            RS->>RS: beginTransaction()
+            RS->>+REL: savePair(C, P)
+            REL-->>-RS: ok
+            RS->>+PP: incrementReportsCount(P)
+            PP-->>-RS: reports_count = 6
+            alt reports_count ≥ 5
+                RS->>+PP: setVerificationStatus(P, "flagged")
+                PP-->>-RS: ok
+            else reports_count < 5
+                Note over RS,PP: інша гілка — SC-040
+            end
+            RS->>RS: commit()
+        end
+        RS-->>C: reportAccepted
+        Note over PP: Тоді: P.reports_count = 6<br/>P.verification_status = flagged
+    else C = P або пара C — P уже є
+        RS-->>C: reportRejected (SC-042, SC-043)
+    end
+    deactivate RS
