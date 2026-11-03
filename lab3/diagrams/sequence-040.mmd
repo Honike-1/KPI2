@@ -5,12 +5,21 @@ sequenceDiagram
     participant REL as Player–Player<br/>«скаржиться на»
     participant PB as Player B<br/>(відповідач)
 
+
     Note over A,PB: SC-040 · REP-01 · UC-10<br/>Дано: A авторизований, B існує, A ще не скаржився на B, B.reports_count = 0
     A->>+RS: submitReport(reportedPlayerId = B)
-    RS->>RS: isSelfReport(A, B) = false
-    RS->>+REL: existsPair(A, B)
-    REL-->>-RS: false
-    alt A ≠ B і пари A — B немає (REP-02 не порушено)
+    alt A = B (REP-02, SC-043)
+        RS->>RS: isSelfReport(A, B) = true
+        RS-->>A: reportRejected (показується помилка)
+    else A ≠ B, пара A — B уже є (REP-02, SC-042)
+        RS->>RS: isSelfReport(A, B) = false
+        RS->>+REL: existsPair(A, B)
+        REL-->>-RS: true
+        RS-->>A: reportRejected (показується помилка)
+    else A ≠ B, пари A — B немає (цей сценарій)
+        RS->>RS: isSelfReport(A, B) = false
+        RS->>+REL: existsPair(A, B)
+        REL-->>-RS: false
         rect rgba(120, 160, 255, 0.15)
             Note over RS,PB: Одна неподільна операція (REP-01)
             RS->>RS: beginTransaction()
@@ -18,16 +27,15 @@ sequenceDiagram
             REL-->>-RS: ok
             RS->>+PB: incrementReportsCount(B)
             PB-->>-RS: reports_count = 1
-            alt reports_count < 5
+            alt reports_count ≥ 5 (REP-03, SC-044)
+                RS->>+PB: setVerificationStatus(B, "flagged")
+                PB-->>-RS: ok
+            else reports_count < 5 (тут: 1)
                 Note over RS,PB: REP-03 не спрацьовує<br/>verification_status B не змінюється
-            else reports_count ≥ 5
-                Note over RS,PB: інша гілка — SC-044, SC-045
             end
             RS->>RS: commit()
         end
         RS-->>A: reportAccepted
         Note over PB: Тоді: пара A — B збережена, B.reports_count = 1
-    else A = B або пара A — B уже є
-        RS-->>A: reportRejected (SC-042, SC-043)
     end
     deactivate RS

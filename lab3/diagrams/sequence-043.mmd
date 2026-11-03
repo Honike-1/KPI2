@@ -1,16 +1,16 @@
 sequenceDiagram
     autonumber
-    actor A as Player A<br/>(скаржник)
+    actor A as Player A<br/>(скаржник і відповідач)
     participant RS as ReportService
-    participant PA as Player A<br/>(також відповідач)
 
-    Note over A,PA: SC-043 · REP-02 · UC-10<br/>Дано: A.reports_count = 0
+    Note over A,RS: SC-043 · REP-02 · UC-10<br/>Дано: A.reports_count = 0
     A->>+RS: submitReport(reportedPlayerId = A)
-    RS->>RS: isSelfReport(A, A) = true
-    alt скаржник = відповідач (REP-02)
+    alt A = A (REP-02) (цей сценарій)
+        RS->>RS: isSelfReport(A, A) = true
         RS-->>A: reportRejected (показується помилка)
-        Note over PA: Тоді: PA не викликається<br/>A.reports_count = 0 без змін
-    else скаржник ≠ відповідач
-        Note over RS,PA: інша гілка — SC-040
+    else A ≠ A
+        RS->>RS: isSelfReport(A, A) = false
+        Note over RS: далі existsPair і збереження — SC-040, SC-042
     end
+    Note over RS: Тоді: скаргу відхилено, A.reports_count = 0 без змін
     deactivate RS
