@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+    actor A as Player A<br/>(скаржник)
+    participant RS as ReportService
+    participant REL as Player–Player<br/>«скаржиться на»
+    participant PB as Player B<br/>(відповідач)
+
+
+    Note over A,PB: SC-045 · REP-03 · UC-10 (структура сценарію)<br/>Дано: B.reports_count = 4
+    loop Для кожного прикладу: status = B.verification_status ∈ {unverified, verified}
+        A->>+RS: submitReport(reportedPlayerId = B)
+        alt A = B (REP-02, SC-043)
+            RS->>RS: isSelfReport(A, B) = true
+            RS-->>A: reportRejected (показується помилка)
+        else A ≠ B, пара A — B уже є (REP-02, SC-042)
+            RS->>RS: isSelfReport(A, B) = false
+            RS->>+REL: existsPair(A, B)
+            REL-->>-RS: true
+            RS-->>A: reportRejected (показується помилка)
+        else A ≠ B, пари A — B немає (цей сценарій)
+            RS->>RS: isSelfReport(A, B) = false
+            RS->>+REL: existsPair(A, B)
+            REL-->>-RS: false
+            rect rgba(120, 160, 255, 0.15)
+                Note over RS,PB: Одна неподільна операція (REP-03)
+                RS->>RS: beginTransaction()
+                RS->>+REL: savePair(A, B)
+                REL-->>-RS: ok
+                RS->>+PB: incrementReportsCount(B)
+                PB-->>-RS: reports_count = 5
+                alt reports_count ≥ 5 (REP-03) (тут: 5)
+                    Note over PB: до: verification_status = status
+                    RS->>+PB: setVerificationStatus(B, "flagged")
+                    PB-->>-RS: status → flagged
+                else reports_count < 5
+                    Note over RS,PB: REP-03 не спрацьовує<br/>verification_status B не змінюється
+                end
+                RS->>RS: commit()
+            end
+            RS-->>A: reportAccepted
+            Note over PB: Тоді: B.reports_count = 5, B.verification_status = flagged<br/>незалежно від попереднього status
+        end
+        deactivate RS
+    end

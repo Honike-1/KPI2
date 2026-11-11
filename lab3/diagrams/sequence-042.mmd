@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor A as Player A<br/>(скаржник)
+    participant RS as ReportService
+    participant REL as Player–Player<br/>«скаржиться на»
+
+
+    Note over A,REL: SC-042 · REP-02 · UC-10<br/>Дано: A уже скаржився на B, B.reports_count = 1
+    A->>+RS: submitReport(reportedPlayerId = B)
+    alt A = B (REP-02, SC-043)
+        RS->>RS: isSelfReport(A, B) = true
+        RS-->>A: reportRejected (показується помилка)
+    else A ≠ B, пара A — B уже є (REP-02) (цей сценарій)
+        RS->>RS: isSelfReport(A, B) = false
+        RS->>+REL: existsPair(A, B)
+        REL-->>-RS: true
+        RS-->>A: reportRejected (показується помилка)
+        Note over RS,REL: savePair і incrementReportsCount не виконуються
+    else A ≠ B, пари A — B немає
+        RS->>RS: isSelfReport(A, B) = false
+        RS->>+REL: existsPair(A, B)
+        REL-->>-RS: false
+        Note over RS,REL: далі збереження і лічильник — SC-040
+    end
+    Note over RS,REL: Тоді: скаргу відхилено, B.reports_count = 1 без змін
+    deactivate RS

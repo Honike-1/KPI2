@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    actor A as Player A<br/>(скаржник і відповідач)
+    participant RS as ReportService
+
+    Note over A,RS: SC-043 · REP-02 · UC-10<br/>Дано: A.reports_count = 0
+    A->>+RS: submitReport(reportedPlayerId = A)
+    alt A = A (REP-02) (цей сценарій)
+        RS->>RS: isSelfReport(A, A) = true
+        RS-->>A: reportRejected (показується помилка)
+    else A ≠ A
+        RS->>RS: isSelfReport(A, A) = false
+        Note over RS: далі existsPair і збереження — SC-040, SC-042
+    end
+    Note over RS: Тоді: скаргу відхилено, A.reports_count = 0 без змін
+    deactivate RS
