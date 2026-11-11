@@ -36,11 +36,11 @@ stateDiagram-v2
     Fork1 --> SaveRes : Система: / send savePair(A,B) → зв'язок «скаржиться на»
     Fork1 --> IncRes : Система: / send incrementReportsCount(B) → Player B
 
-    SaveRes --> Saved : [ok] recv ok ← зв'язок
-    SaveRes --> Cancelled : [збій] rollback() SC-041
+    SaveRes --> Saved : [ok]<br/>recv ok ← зв'язок
+    SaveRes --> Cancelled : [збій]
 
-    IncRes --> Counted : [ok] recv reports_count ← Player B
-    IncRes --> Cancelled : [збій] rollback() SC-041
+    IncRes --> Counted : [ok]<br/>recv reports_count<br/>← Player B
+    IncRes --> Cancelled : [збій]
 
     Saved --> Join1
     Counted --> Join1
@@ -54,4 +54,4 @@ stateDiagram-v2
 
     Rejected --> [*] : Система: / send reportRejected → Player A<br/>Player: recv reportRejected ← Система<br/>(причина: самоскарга SC-043 / дубль SC-042)
     Accepted --> [*] : Система: / send reportAccepted → Player A<br/>Player: recv reportAccepted ← Система
-    Cancelled --> [*] : Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>нічого не застосовано
+    Cancelled --> [*] : Система: rollback() SC-041<br/>Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>нічого не застосовано
