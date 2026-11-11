@@ -6,52 +6,43 @@ stateDiagram-v2
 
     state "Запит отримано" as Req
     state "Скаргу відхилено" as Rejected
-    state "Транзакція відкрита" as TxOpen
-    state "Пару збережено" as Saved
-    state "Лічильник збільшено" as Counted
-    state "B позначено flagged" as Flagged
     state "Скаргу прийнято" as Accepted
     state "Скаргу скасовано" as Cancelled
 
     state SelfCheck <<choice>>
     state DupCheck <<choice>>
-    state SaveRes <<choice>>
-    state IncRes <<choice>>
-    state Fork1 <<fork>>
-    state Join1 <<join>>
-    state FlagCheck <<choice>>
+
+    state "Транзакція відкрита" as TxOpen {
+        state "Пару збережено" as Saved
+        state "Лічильник збільшено" as Counted
+        state "B позначено flagged" as Flagged
+        state Fork1 <<fork>>
+        state Join1 <<join>>
+        state FlagCheck <<choice>>
+
+        [*] --> Fork1
+        Fork1 --> Saved : Система: / send savePair(A,B) → зв'язок «скаржиться на»<br/>recv ok ← зв'язок
+        Fork1 --> Counted : Система: / send incrementReportsCount(B) → Player B<br/>recv reports_count ← Player B
+        Saved --> Join1
+        Counted --> Join1
+        Join1 --> FlagCheck
+        FlagCheck --> Flagged : [reports_count ≥ 5] REP-03 SC-044 SC-045<br/>Система: / send setVerificationStatus(B, flagged) → Player B<br/>recv ok ← Player B
+        FlagCheck --> [*] : [reports_count < 5] REP-03 SC-040
+        Flagged --> [*]
+    }
 
     [*] --> Req : Player: / send submitReport(reportedPlayerId) → Система
-
     Req --> SelfCheck : Система: recv submitReport ← Player A<br/>isSelfReport
 
     SelfCheck --> Rejected : [A = B] SC-043 REP-02<br/>без existsPair
-    SelfCheck --> DupCheck : [інакше, A ≠ B]<br/>Система: / send existsPair(A,B) → зв'язок «скаржиться на»
+    SelfCheck --> DupCheck : [A ≠ B]<br/>Система: / send existsPair(A,B) → зв'язок «скаржиться на»
 
     DupCheck --> Rejected : [existsPair = true] SC-042 REP-02<br/>recv existsPair ← зв'язок
-    DupCheck --> TxOpen : [інакше, existsPair = false] SC-040 REP-01<br/>Система: beginTransaction
+    DupCheck --> TxOpen : [existsPair = false] SC-040 REP-01<br/>Система: beginTransaction
 
-    TxOpen --> Fork1
-
-    Fork1 --> SaveRes : Система: / send savePair(A,B) → зв'язок «скаржиться на»
-    Fork1 --> IncRes : Система: / send incrementReportsCount(B) → Player B
-
-    SaveRes --> Saved : [ok]<br/>recv ok ← зв'язок
-    SaveRes --> Cancelled : [збій]
-
-    IncRes --> Counted : [ok]<br/>recv reports_count<br/>← Player B
-    IncRes --> Cancelled : [збій]
-
-    Saved --> Join1
-    Counted --> Join1
-
-    Join1 --> FlagCheck
-
-    FlagCheck --> Flagged : [reports_count ≥ 5] REP-03 SC-044 SC-045<br/>Система: / send setVerificationStatus(B, flagged) → Player B
-    FlagCheck --> Accepted : [інакше] REP-03 SC-040<br/>Система: commit
-
-    Flagged --> Accepted : recv ok ← Player B<br/>Система: commit
+    TxOpen --> Accepted : [обидві гілки ok] Система: commit
+    TxOpen --> Cancelled : [збій будь-якої гілки або відповіді немає] SC-041 REP-01<br/>Система: rollback()
 
     Rejected --> [*] : Система: / send reportRejected → Player A<br/>Player: recv reportRejected ← Система<br/>(причина: самоскарга SC-043 / дубль SC-042)
     Accepted --> [*] : Система: / send reportAccepted → Player A<br/>Player: recv reportAccepted ← Система
-    Cancelled --> [*] : Система: rollback() SC-041<br/>Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>нічого не застосовано
+    Cancelled --> [*] : Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>нічого не застосовано
