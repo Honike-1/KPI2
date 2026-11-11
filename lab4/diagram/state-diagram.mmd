@@ -1,0 +1,57 @@
+---
+title: UC-10 Подати скаргу на гравця
+---
+stateDiagram-v2
+    direction TB
+
+    state "Запит отримано" as Req
+    state "Скаргу відхилено" as Rejected
+    state "Транзакція відкрита" as TxOpen
+    state "Пару збережено" as Saved
+    state "Лічильник збільшено" as Counted
+    state "B позначено flagged" as Flagged
+    state "Скаргу прийнято" as Accepted
+    state "Скаргу скасовано" as Cancelled
+
+    state SelfCheck <<choice>>
+    state DupCheck <<choice>>
+    state SaveRes <<choice>>
+    state IncRes <<choice>>
+    state Fork1 <<fork>>
+    state Join1 <<join>>
+    state FlagCheck <<choice>>
+
+    [*] --> Req : Player: / send submitReport(reportedPlayerId) → Система
+
+    Req --> SelfCheck : Система: recv submitReport ← Player A<br/>isSelfReport
+
+    SelfCheck --> Rejected : [A = B] SC-043 REP-02<br/>без existsPair
+    SelfCheck --> DupCheck : [інакше, A ≠ B]<br/>Система: / send existsPair(A,B) → зв'язок «скаржиться на»
+
+    DupCheck --> Rejected : [existsPair = true] SC-042 REP-02<br/>recv existsPair ← зв'язок
+    DupCheck --> TxOpen : [інакше, existsPair = false] SC-040 REP-01<br/>Система: beginTransaction
+
+    TxOpen --> Fork1
+
+    Fork1 --> SaveRes : Система: / send savePair(A,B) → зв'язок «скаржиться на»
+    Fork1 --> IncRes : Система: / send incrementReportsCount(B) → Player B
+
+    SaveRes --> Saved : [ok] recv ok ← зв'язок
+    SaveRes --> Cancelled : [збій] rollback() SC-041
+
+    IncRes --> Counted : [ok] recv reports_count ← Player B
+    IncRes --> Cancelled : [збій] rollback() SC-041
+
+    Saved --> Join1
+    Counted --> Join1
+
+    Join1 --> FlagCheck
+
+    FlagCheck --> Flagged : [reports_count ≥ 5] REP-03 SC-044 SC-045<br/>Система: / send setVerificationStatus(B, flagged) → Player B
+    FlagCheck --> Accepted : [інакше] REP-03 SC-040<br/>Система: commit
+
+    Flagged --> Accepted : recv ok ← Player B<br/>Система: commit
+
+    Rejected --> [*] : Система: / send reportRejected → Player A<br/>Player: recv reportRejected ← Система<br/>(причина: самоскарга SC-043 / дубль SC-042)
+    Accepted --> [*] : Система: / send reportAccepted → Player A<br/>Player: recv reportAccepted ← Система
+    Cancelled --> [*] : Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>нічого не застосовано
