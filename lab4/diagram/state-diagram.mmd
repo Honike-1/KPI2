@@ -39,10 +39,11 @@ stateDiagram-v2
 
     DupCheck --> Rejected : [existsPair = true] SC-042 REP-02<br/>recv existsPair ← зв'язок
     DupCheck --> TxOpen : [existsPair = false] SC-040 REP-01<br/>Система: beginTransaction
+    DupCheck --> Cancelled : [existsPair: збій або відповіді немає] assumption<br/>Система: без rollback (транзакції ще немає)
 
     TxOpen --> Accepted : [обидві гілки ok] Система: commit
     TxOpen --> Cancelled : [збій будь-якої гілки або відповіді немає] SC-041 REP-01<br/>Система: rollback()
 
-    Rejected --> [*] : Система: / send reportRejected → Player A<br/>Player: recv reportRejected ← Система<br/>(причина: самоскарга SC-043 / дубль SC-042)
+    Rejected --> [*] : Система: / send reportRejected → Player A<br/>Player: recv reportRejected ← Система<br/>показується помилка (причина: самоскарга SC-043 / дубль SC-042)
     Accepted --> [*] : Система: / send reportAccepted → Player A<br/>Player: recv reportAccepted ← Система
-    Cancelled --> [*] : Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>нічого не застосовано
+    Cancelled --> [*] : Система: / send reportFailed → Player A<br/>Player: recv reportFailed ← Система<br/>показується помилка, нічого не застосовано
