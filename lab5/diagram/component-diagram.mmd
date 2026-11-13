@@ -1,0 +1,114 @@
+flowchart TB
+    %% ===== Зовнішні сутності (поза межею системи) =====
+    Guest(["Guest"])
+    Player(["Player"])
+    Admin(["Admin (успадковує Player, ADR-0007)"])
+    Browser["Браузер (середовище виконання UI)"]
+
+    Guest --> Browser
+    Player --> Browser
+    Admin --> Browser
+
+    %% ===== Межа системи Umasearch =====
+    subgraph SYS["Система Umasearch"]
+        direction TB
+
+        subgraph UI["Шар UI"]
+            AuthPages["AuthPages"]
+            SearchPage["SearchPage"]
+            ResultsList["ResultsList"]
+            RentalPage["RentalPage"]
+            ReportButton["ReportButton"]
+            AdminPanel["AdminPanel"]
+        end
+
+        subgraph API["Шар API / Backend"]
+            AuthMiddleware["AuthMiddleware"]
+            RoleGuard["RoleGuard (ADM-05)"]
+            AuthController["AuthController"]
+            SearchController["SearchController"]
+            RentalController["RentalController"]
+            ReportController["ReportController"]
+            AdminController["AdminController"]
+        end
+
+        subgraph SVC["Шар сервісів"]
+            AuthService["AuthService"]
+            SearchService["SearchService"]
+            RentalService["RentalService"]
+            ReportService["ReportService"]
+            ReferenceDataService["ReferenceDataService"]
+            ModerationService["ModerationService"]
+        end
+
+        subgraph DAL["Шар Data Access"]
+            PlayerRepository["PlayerRepository"]
+            ReportRepository["ReportRepository"]
+            SharedUmaRepository["SharedUmaRepository"]
+            SharedCardRepository["SharedCardRepository"]
+            ReferenceRepository["ReferenceRepository"]
+            TransactionManager["TransactionManager"]
+        end
+
+        subgraph DBL["Шар бази даних"]
+            Database[("Database<br/>player, umamusume, support_card, factor, rank,<br/>shared_uma, shared_card,<br/>shared_uma_factor, player_report")]
+        end
+    end
+
+    %% ===== Зв'язок зовнішнього світу з UI та API =====
+    Browser -->|"екрани й дії за ролями"| UI
+    UI ==>|"HTTP API (required)"| AuthMiddleware
+
+    %% ===== Middleware / Controllers =====
+    AuthMiddleware -->|"required: IAuthService"| AuthService
+    AuthMiddleware -.->|"provided: ISession"| AuthController
+    AuthMiddleware -.->|"provided: ISession"| SearchController
+    AuthMiddleware -.->|"provided: ISession"| RentalController
+    AuthMiddleware -.->|"provided: ISession"| ReportController
+    AuthMiddleware -.->|"provided: ISession"| RoleGuard
+    RoleGuard -.->|"provided: IRoleGuard"| AdminController
+
+    %% ===== HTTP-ендпоінти (provided контролерів) =====
+    AuthMiddleware -->|"POST /auth/register, /auth/login"| AuthController
+    AuthMiddleware -->|"GET /search/umas, /search/cards"| SearchController
+    AuthMiddleware -->|"/rentals/uma, /rentals/card (POST, PUT, DELETE)"| RentalController
+    AuthMiddleware -->|"POST /players/{id}/reports"| ReportController
+    RoleGuard -->|"/admin/*"| AdminController
+
+    %% ===== Контролери -> Сервіси (required інтерфейси) =====
+    AuthController -->|"IAuthService: register, authenticate"| AuthService
+    SearchController -->|"ISearchService: searchUmas, searchCards"| SearchService
+    RentalController -->|"IRentalService: createUma, createCard, replace, remove"| RentalService
+    ReportController -->|"IReportService: submitReport"| ReportService
+    AdminController -->|"IReferenceDataService: create*"| ReferenceDataService
+    AdminController -->|"IModerationService: verify, listReports, unflag"| ModerationService
+
+    %% ===== Сервіси -> Репозиторії (required інтерфейси) =====
+    AuthService -->|"IPlayerRepository"| PlayerRepository
+
+    SearchService -->|"ISharedUmaRepository"| SharedUmaRepository
+    SearchService -->|"ISharedCardRepository"| SharedCardRepository
+    SearchService -->|"IReferenceRepository"| ReferenceRepository
+
+    RentalService -->|"ISharedUmaRepository"| SharedUmaRepository
+    RentalService -->|"ISharedCardRepository"| SharedCardRepository
+    RentalService -->|"IReferenceRepository"| ReferenceRepository
+    RentalService -->|"IPlayerRepository"| PlayerRepository
+
+    ReportService -->|"IPlayerRepository"| PlayerRepository
+    ReportService -->|"IReportRepository: existsPair, savePair, incrementReportsCount"| ReportRepository
+    ReportService -->|"ITransactionManager: beginTransaction, commit, rollback"| TransactionManager
+
+    ReferenceDataService -->|"IReferenceRepository"| ReferenceRepository
+
+    ModerationService -->|"IPlayerRepository: setVerificationStatus"| PlayerRepository
+    ModerationService -->|"IReportRepository"| ReportRepository
+    ModerationService -->|"ITransactionManager"| TransactionManager
+
+    %% ===== Репозиторії -> БД (required: IDatabase) =====
+    PlayerRepository -->|"IDatabase"| Database
+    ReportRepository -->|"IDatabase"| Database
+    SharedUmaRepository -->|"IDatabase"| Database
+    SharedCardRepository -->|"IDatabase"| Database
+    ReferenceRepository -->|"IDatabase"| Database
+    TransactionManager -->|"IDatabase: SQL, обмеження, транзакції"| Database
