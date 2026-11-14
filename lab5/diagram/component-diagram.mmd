@@ -60,13 +60,13 @@ flowchart TB
     UI ==>|"HTTP API (required)"| AuthMiddleware
 
     %% ===== Middleware / Controllers =====
-    AuthMiddleware -->|"required: IAuthService"| AuthService
+    AuthMiddleware -->|"required: IAuthService.validateSession"| AuthService
     AuthMiddleware -.->|"provided: ISession"| AuthController
     AuthMiddleware -.->|"provided: ISession"| SearchController
     AuthMiddleware -.->|"provided: ISession"| RentalController
     AuthMiddleware -.->|"provided: ISession"| ReportController
     AuthMiddleware -.->|"provided: ISession"| RoleGuard
-    RoleGuard -.->|"provided: IRoleGuard"| AdminController
+    RoleGuard -.->|"provided: IRoleGuard, ISession"| AdminController
 
     %% ===== HTTP-ендпоінти (provided контролерів) =====
     AuthMiddleware -->|"POST /auth/register, /auth/login"| AuthController
@@ -95,14 +95,14 @@ flowchart TB
     RentalService -->|"IReferenceRepository"| ReferenceRepository
     RentalService -->|"IPlayerRepository"| PlayerRepository
 
-    ReportService -->|"IPlayerRepository"| PlayerRepository
-    ReportService -->|"IReportRepository: existsPair, savePair, incrementReportsCount"| ReportRepository
+    ReportService -->|"IPlayerRepository: incrementReportsCount, setFlagged"| PlayerRepository
+    ReportService -->|"IReportRepository: existsPair, savePair"| ReportRepository
     ReportService -->|"ITransactionManager: beginTransaction, commit, rollback"| TransactionManager
 
     ReferenceDataService -->|"IReferenceRepository"| ReferenceRepository
 
-    ModerationService -->|"IPlayerRepository: setVerificationStatus"| PlayerRepository
-    ModerationService -->|"IReportRepository"| ReportRepository
+    ModerationService -->|"IPlayerRepository: setVerificationStatus, setFlagged"| PlayerRepository
+    ModerationService -->|"IReportRepository: listReports"| ReportRepository
     ModerationService -->|"ITransactionManager"| TransactionManager
 
     %% ===== Репозиторії -> БД (required: IDatabase) =====
